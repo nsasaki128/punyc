@@ -3,7 +3,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./tinyc "$input" > tmp.s || exit
+  ./punyc "$input" > tmp.s || exit
   gcc -o tmp tmp.s
   ./tmp
   actual="$?"

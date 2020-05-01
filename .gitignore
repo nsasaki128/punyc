@@ -2,7 +2,7 @@
 **/*.o
 **/a.out
 tmp*
-tinyc
+punyc
 
 # Prerequisites
 *.d

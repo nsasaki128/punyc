@@ -1,12 +1,12 @@
 CFLAGS=-std=c11 -g -static -fno-common
 
-tinyc: main.o
+punyc: main.o
 	$(CC) -o $@ $? $(LDFLAGS)
 
-test: tinyc
+test: punyc
 	./test.sh
 
 clean:
-	rm -f tinyc *.o *~ tmp*
+	rm -f punyc *.o *~ tmp*
 
 .PHONY: test clean
