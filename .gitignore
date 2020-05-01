@@ -1,3 +1,9 @@
+.vscode*
+**/*.o
+**/a.out
+tmp*
+tinyc
+
 # Prerequisites
 *.d
 
