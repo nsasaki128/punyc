@@ -50,5 +50,9 @@ assert 0 'return 1>=2;'
 assert 1 'return 1; 2; 3;'
 assert 2 '1; return 2; 3;'
 assert 3 '1; 2; return 3;'
+assert 3 'a=3; return a;'
+assert 8 'a=3; z=5; return a+z;'
+assert 6 'a=b=3; return a+b;'
+assert 32 'a=2; b=3; c=10; return a+b*c;'
 
 echo OK

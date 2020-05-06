@@ -9,10 +9,42 @@ static char *reg(int idx) {
   return r[idx];
 }
 
-static void gen_expr(Node *node) {
-  if (node->kind == ND_NUM) {
-    printf("  mov %s, %ld\n", reg(top++), node->val);
+// Pushes the given node's address to the stack.
+static void gen_addr(Node *node) {
+  if (node->kind == ND_VAR) {
+    int offset = (node->name - 'a' + 1) * 8;
+    offset += 32; // for callee-saved registers
+    printf("  lea %s, [rbp-%d]\n", reg(top++), offset);
     return;
+  }
+
+  error("not an lvalue");
+}
+
+static void load(void) {
+  printf("  mov %s, [%s]\n", reg(top - 1), reg(top - 1));
+}
+
+static void store(void) {
+  printf("  mov [%s], %s\n", reg(top - 1), reg(top - 2));
+  top--;
+}
+
+// Generate code for a given node.
+static void gen_expr(Node *node) {
+  switch (node->kind) {
+    case ND_NUM:
+      printf("  mov %s, %ld\n", reg(top++), node->val);
+      return;
+    case ND_VAR:
+      gen_addr(node);
+      load();
+      return;
+    case ND_ASSIGN:
+      gen_expr(node->rhs);
+      gen_addr(node->lhs);
+      store();
+      return;
   }
 
   gen_expr(node->lhs);
@@ -84,21 +116,28 @@ void codegen(Node *node) {
   printf(".globl main\n");
   printf("main:\n");
 
-  // Sace callee-saved registers.
-  printf("  push r12\n");
-  printf("  push r13\n");
-  printf("  push r14\n");
-  printf("  push r15\n");
+  // Prologue. r12-r15 are calee-saved ragisters.
+  printf("  push rbp\n");
+  printf("  mov rbp, rsp\n");
+  printf("  sub rsp, 240\n");
+  printf("  mov [rbp-8], r12\n");
+  printf("  mov [rbp-16], r13\n");
+  printf("  mov [rbp-24], r14\n");
+  printf("  mov [rbp-32], r15\n");
+
 
   for (Node *n = node; n; n = n->next) {
     gen_stmt(n);
     assert(top == 0);
   }
 
+  // Epilogue
   printf(".L.return:\n");
-  printf("  pop r15\n");
-  printf("  pop r14\n");
-  printf("  pop r13\n");
-  printf("  pop r12\n");
+  printf("  mov r12, [rbp-8]\n");
+  printf("  mov r13, [rbp-16]\n");
+  printf("  mov r14, [rbp-24]\n");
+  printf("  mov r15, [rbp-32]\n");
+  printf("  mov rsp, rbp\n");
+  printf("  pop rbp\n");
   printf("  ret\n");
 }
