@@ -39,9 +39,16 @@ static long get_number(Token *tok) {
   return tok->val;
 }
 
-// stmt = expr ";"
+// stmt = "return" expr ";"
+//      | expr ";"
 static Node *stmt(Token **rest, Token *tok) {
-  Node *node = new_unray(ND_EXPR_STMT, expr(&tok, tok));
+  Node *node;
+  
+  if (equal(tok, "return"))
+    node = new_unray(ND_RETURN, expr(&tok, tok->next));
+  else
+    node = new_unray(ND_EXPR_STMT, expr(&tok, tok));
+  
   *rest = skip(tok, ";");
   return node;
 }

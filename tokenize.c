@@ -36,15 +36,15 @@ void error_tok(Token *tok, char *fmt, ...) {
 }
 
 // Consumes the current token if it matches `s`.
-bool equal(Token *tok, char *s) {
-  return strlen(s) == tok->len &&
-         !strncmp(tok->loc, s, tok->len);
+bool equal(Token *tok, char *op) {
+  return strlen(op) == tok->len &&
+         !strncmp(tok->loc, op, tok->len);
 }
 
 // Ensure that the current token is `s`.
-Token *skip(Token *tok, char *s) {
-  if (!equal(tok, s))
-    error_tok(tok, "expected '%s'", s);
+Token *skip(Token *tok, char *op) {
+  if (!equal(tok, op))
+    error_tok(tok, "expected '%s'", op);
   return tok->next;
 }
 
@@ -62,10 +62,17 @@ static bool startswith(char *p, char *q) {
   return strncmp(p, q, strlen(q)) == 0;
 }
 
-// Tokenize `current_input` and returns new tokens.
+static bool is_alpha(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+static bool is_alnum(char c) {
+  return is_alpha(c) || ('0' <= c && c <= '9');
+}
+
+// Tokenize a given string and returns new tokens.
 Token *tokenize(char *p) {
   current_input = p;
-
   Token head = {};
   Token *cur = &head;
 
@@ -73,6 +80,13 @@ Token *tokenize(char *p) {
     // Skip whitespace characters.
     if (isspace(*p)) {
       p++;
+      continue;
+    }
+
+    // Keywords
+    if (startswith(p, "return") && !is_alnum(p[6])) {
+      cur = new_token(TK_RESERVED, cur, p, 6);
+      p += 6;
       continue;
     }
 
