@@ -54,5 +54,9 @@ assert 3 'a=3; return a;'
 assert 8 'a=3; z=5; return a+z;'
 assert 6 'a=b=3; return a+b;'
 assert 32 'a=2; b=3; c=10; return a+b*c;'
+assert 3 'foo=3; return foo;'
+assert 8 'foo123=3; bar=5; return foo123+bar;'
+assert 7 'foo=3; bar=2; foo=7; return foo;'
+
 
 echo OK
