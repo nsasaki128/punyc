@@ -57,6 +57,11 @@ assert 32 'a=2; b=3; c=10; return a+b*c;'
 assert 3 'foo=3; return foo;'
 assert 8 'foo123=3; bar=5; return foo123+bar;'
 assert 7 'foo=3; bar=2; foo=7; return foo;'
+assert 3 'if (0) return 2; return 3;'
+assert 3 'if (1-1) return 2; return 3;'
+assert 2 'if (1) return 2; return 3;'
+assert 2 'if (2-1) return 2; return 3;'
+assert 3 'a=1; b=2; if (a>b) return 2; else return 3; return 4;'
 
 
 echo OK
