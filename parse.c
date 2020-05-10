@@ -4,6 +4,7 @@
 // accumulated to this list.
 Var *locals;
 
+static Node *compound_stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
 static Node *assign(Token **rest, Token *tok);
 static Node *equality(Token **rest, Token *tok);
@@ -69,6 +70,7 @@ static long get_number(Token *tok) {
 // stmt = "return" expr ";"
 //      | "if" + "(" expr ")" stmt ("else" stmt)?
 //      | "for" + "(" expr? ";" expr? ";" expr? ")" stmt 
+//      | "{" compund-stmt
 //      | expr ";"
 static Node *stmt(Token **rest, Token *tok) {
 
@@ -118,8 +120,25 @@ static Node *stmt(Token **rest, Token *tok) {
     node->then = stmt(rest, tok);
     return node;
   }
+  
+  if (equal(tok, "{"))
+    return compound_stmt(rest, tok->next);
+
   Node *node = new_unary(ND_EXPR_STMT, expr(&tok, tok));
   *rest = skip(tok, ";");
+  return node;
+}
+
+// compund-stmt = stmt* "}"
+static Node *compound_stmt(Token **rest, Token *tok) {
+  Node head = {};
+  Node *cur = &head;
+  while (!equal(tok, "}"))
+    cur = cur->next = stmt(&tok, tok);
+  
+  Node *node = new_node(ND_BLOCK);
+  node->body = head.next;
+  *rest = tok->next;
   return node;
 }
 
@@ -272,12 +291,10 @@ static Node *primary(Token **rest, Token *tok) {
 
 // program = stmt*
 Function *parse(Token *tok) {
-  Node head = {};
-  Node *cur = &head;
-  while (tok->kind != TK_EOF) 
-    cur = cur->next = stmt(&tok, tok);
+  tok = skip(tok, "{");
+
   Function *prog = calloc(1, sizeof(Function));
-  prog->node = head.next;
+  prog->node = compound_stmt(&tok, tok)->body;
   prog->locals = locals;
   return prog;
 }
