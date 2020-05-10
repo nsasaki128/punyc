@@ -60,6 +60,7 @@ typedef enum {
   ND_ASSIGN,    // =
   ND_RETURN,    // "return"
   ND_IF,        // "if"
+  ND_FOR,       // "for"
   ND_EXPR_STMT, // Expression statement
   ND_VAR,       // Variable
   ND_NUM,       // Integer
@@ -71,10 +72,12 @@ struct Node {
   NodeKind kind; // Node kind
   Node *next;    // Next node
   Node *lhs;     // Left-hand side
-  // "if" statement
+  // "if" or "for" statement
   Node *cond;
   Node *then;
   Node *els;
+  Node *init;
+  Node *inc;
   Node *rhs;     // Right-hand side
   Var *var;      // Used if kind == ND_VAR
   long val;      // Used if kind == ND_NUM
