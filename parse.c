@@ -110,6 +110,14 @@ static Node *stmt(Token **rest, Token *tok) {
     return node;
   }
 
+  if (equal(tok, "while")) {
+    Node *node = new_node(ND_FOR);
+    tok = skip(tok->next, "(");
+    node->cond = expr(&tok, tok);
+    tok = skip(tok, ")");
+    node->then = stmt(rest, tok);
+    return node;
+  }
   Node *node = new_unary(ND_EXPR_STMT, expr(&tok, tok));
   *rest = skip(tok, ";");
   return node;
