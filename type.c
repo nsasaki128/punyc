@@ -1,12 +1,12 @@
 #include "punyc.h"
 
-static Type *ty_int = &(Type){TY_INT};
+Type *ty_int = &(Type){TY_INT};
 
 bool is_integer(Type *ty) {
   return ty->kind == TY_INT;
 }
 
-Type *point_to(Type *base) {
+Type *pointer_to(Type *base) {
   Type *ty = calloc(1, sizeof(Type));
   ty->kind = TY_PTR;
   ty->base = base;
@@ -40,18 +40,19 @@ void add_type(Node *node) {
     case ND_NE:
     case ND_LT:
     case ND_LE:
-    case ND_VAR:
     case ND_NUM:
       node->ty = ty_int;
       return;
+    case ND_VAR:
+      node->ty = node->var->ty;
+      return;
     case ND_ADDR:
-      node->ty = point_to(node->lhs->ty);
+      node->ty = pointer_to(node->lhs->ty);
       return;
     case ND_DEREF:
-      if (node->lhs->ty->kind == TY_PTR)
-        node->ty = node->lhs->ty->base;
-      else
-        node->ty = ty_int;
+      if (node->lhs->ty->kind != TY_PTR)
+        error_tok(node->tok, "invalid pointer dereference");
+      node->ty = node->lhs->ty->base;
       return;
   }
 }
