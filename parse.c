@@ -420,7 +420,22 @@ static Node *unary(Token **rest, Token *tok) {
   return primary(rest, tok);
 }
 
-// primary = "(" expr ")" | ident args? | num
+// func-args = "(" (assing ("," assing)*?) ")"
+static Node *func_args(Token **rest, Token *tok) {
+  Node head = {};
+  Node *cur = &head;
+
+  while (!equal(tok, ")")) {
+    if (cur != &head)
+      tok = skip(tok, ",");
+    cur = cur->next = assign(&tok, tok);
+  }
+
+  *rest = skip(tok, ")");
+  return head.next;
+}
+
+// primary = "(" expr ")" | ident func-args? | num
 // args = "(" ")"
 static Node *primary(Token **rest, Token *tok) {
   if (equal(tok, "(")) {
@@ -434,7 +449,7 @@ static Node *primary(Token **rest, Token *tok) {
     if (equal(tok->next, "(")) {
       Node *node = new_node(ND_FUNCALL, tok);
       node->funcname = strndup(tok->loc, tok->len);
-      *rest = skip(tok->next->next, ")");
+      node->args = func_args(rest, tok->next->next);
       return node;
     }
 
