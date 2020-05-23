@@ -92,6 +92,20 @@ static void convert_keywords(Token *tok) {
     if (t->kind == TK_IDENT && is_keyword(t))
       t->kind = TK_RESERVED;
 }
+
+static Token *read_string_leteral(Token *cur, char *start) {
+  char *p = start + 1;
+  while (*p && *p != '"')
+    p++;
+  if (!p)
+    error_at(start, "unclosed string literal");
+  
+  Token *tok = new_token(TK_STR, cur, start, p - start + 1);
+  tok->contents = strndup(start + 1, p - start - 1);
+  tok->cont_len = p - start;
+  return tok;
+}
+
 // Tokenize a given string and returns new tokens.
 Token *tokenize(char *p) {
   current_input = p;
@@ -105,6 +119,12 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    // String literal
+    if (*p == '"') {
+      cur = read_string_leteral(cur, p);
+      p += cur->len;
+      continue;
+    }
     // Identifier
     if (is_alpha(*p)) {
       char *q = p++;
