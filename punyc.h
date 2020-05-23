@@ -126,7 +126,13 @@ Program *parse(Token *tok);
 // type.c
 //
 
-typedef enum {TY_INT, TY_PTR, TY_FUNC, TY_ARRAY } TypeKind;
+typedef enum {
+  TY_CHAR,
+  TY_INT, 
+  TY_PTR, 
+  TY_FUNC, 
+  TY_ARRAY,
+} TypeKind;
 
 struct Type {
   TypeKind kind;
@@ -147,6 +153,7 @@ struct Type {
   Type *next;
 };
 
+extern Type *ty_char;
 extern Type *ty_int;
 
 bool is_integer(Type *ty);
