@@ -78,6 +78,20 @@ static bool is_alnum(char c) {
   return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
+static bool is_hex(char c) {
+  return ('0' <= c && c <= '9') ||
+         ('a' <= c && c <= 'f') ||
+         ('A' <= c && c <= 'F');
+}
+
+static int from_hex(char c) {
+  if ('0' <= c && c <= '9') 
+    return c - '0';
+  if ('a' <= c && c <= 'f')
+    return c - 'a' + 10;
+  return c - 'A' + 10;
+}
+
 static bool is_keyword(Token *tok) {
   static char *kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
 
@@ -95,6 +109,21 @@ static void convert_keywords(Token *tok) {
 
 static char *read_escaped_char(char *result, char *p) {
   switch (*p) {
+    case 'x': {
+      // Read a hexadecimal number.
+      p++;
+      if (!is_hex(*p))
+        error_at(p, "invalid hex escape sequece");
+      
+      int r = 0;
+      for (; is_hex(*p); p++) {
+        r = (r << 4) | from_hex(*p);
+        if (r > 255)
+          error_at(p, "hex escape sequence out of range");
+      }
+      *result = r;
+      return p;
+    }
     case '0': case'1': case'2': case'3':
     case '4': case'5': case'6': case'7': {
       // Read an octal number.
