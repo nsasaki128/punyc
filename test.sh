@@ -14,7 +14,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./punyc "$input" > tmp.s || exit
+  echo "$input" | ./punyc - > tmp.s || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
