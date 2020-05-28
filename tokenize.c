@@ -28,6 +28,7 @@ static void verror_at(char *loc, char *fmt, va_list ap) {
   char *end = loc;
   while (*end != '\n')
     end++;
+
   // Get a line number.
   int lineno = 1;
   for (char *p = current_input; p < line; p++)
@@ -40,6 +41,7 @@ static void verror_at(char *loc, char *fmt, va_list ap) {
 
   // Show the error maessage.
   int pos = loc - line + indent;
+
   fprintf(stderr, "%*s", pos, ""); // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
@@ -80,6 +82,7 @@ bool consume(Token **rest, Token *tok, char *str) {
   *rest = tok;
   return false;
 }
+
 // Create a new token and add it as the next token of `cur`.
 static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
@@ -117,7 +120,9 @@ static int from_hex(char c) {
 }
 
 static bool is_keyword(Token *tok) {
-  static char *kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
+  static char *kw[] = {
+    "return", "if", "else", "for", "while", "int", "sizeof", "char"
+  };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
     if (equal(tok, kw[i]))
@@ -171,9 +176,12 @@ static char *read_escaped_char(char *result, char *p) {
     default: *result = *p; return p + 1;
   }
 }
+
 static Token *read_string_leteral(Token *cur, char *start) {
   char *p = start + 1;
   char *end = p;
+
+  // Find the closing double-quote.
   for (; *end != '"'; end++) {
     if (*end == '\0')
       error_at(start, "unclosed string literal");
@@ -218,12 +226,30 @@ Token *tokenize(char *filename, char *p) {
       continue;
     }
 
+    // Skip line comments.
+    if (startswith(p, "//")) {
+      p += 2;
+      while (*p != '\n')
+        p++;
+      continue;
+    }
+
+    // Skip block comments.
+    if (startswith(p, "/*")) {
+      char *q = strstr(p + 2, "*/");
+      if (!q)
+        error_at(p, "unclosed block comment.");
+      p = q + 2;
+      continue;
+    }
+
     // String literal
     if (*p == '"') {
       cur = read_string_leteral(cur, p);
       p += cur->len;
       continue;
     }
+
     // Identifier
     if (is_alpha(*p)) {
       char *q = p++;
@@ -236,10 +262,10 @@ Token *tokenize(char *filename, char *p) {
     // Multi-letter punctuators
     if (startswith(p, "==") || startswith(p, "!=") ||
         startswith(p, "<=") || startswith(p, ">=")) {
-          cur = new_token(TK_RESERVED, cur, p, 2);
-          p += 2;
-          continue;
-        }
+      cur = new_token(TK_RESERVED, cur, p, 2);
+      p += 2;
+      continue;
+    }
 
     // Single-letter punctuators
     if (ispunct(*p)) {
