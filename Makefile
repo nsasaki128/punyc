@@ -8,7 +8,9 @@ punyc: $(OBJS)
 $(OBJS): punyc.h
 
 test: punyc
-	./test.sh
+	./punyc tests/tests.c > tmp.s
+	gcc -static -o tmp tmp.s
+	./tmp
 
 clean:
 	rm -f punyc *.o *~ tmp*
