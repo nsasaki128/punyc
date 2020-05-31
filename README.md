@@ -1,2 +1,2 @@
-# tinyc
+# punnyc
 Practice
