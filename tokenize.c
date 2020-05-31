@@ -19,7 +19,7 @@ void error(char *fmt, ...) {
 //
 // foo.c:10 x = y + 1;
 //              ^ <error message here>
-static void verror_at(char *loc, char *fmt, va_list ap) {
+static void verror_at(int lineno, char *loc, char *fmt, va_list ap) {
   // Find a line containinc `loc`.
   char *line = loc;
   while (current_input < line && line[-1] != '\n')
@@ -28,12 +28,6 @@ static void verror_at(char *loc, char *fmt, va_list ap) {
   char *end = loc;
   while (*end != '\n')
     end++;
-
-  // Get a line number.
-  int lineno = 1;
-  for (char *p = current_input; p < line; p++)
-    if (*p == '\n')
-      lineno++;
 
   // Print out the line.
   int indent = fprintf(stderr, "%s:%d ", current_filename, lineno);
@@ -50,15 +44,20 @@ static void verror_at(char *loc, char *fmt, va_list ap) {
 }
 
 static void error_at(char *loc, char *fmt, ...) {
+  int lineno = 1;
+  for (char *p = current_input; p < loc; p++)
+    if (*p == '\n')
+      lineno++;
+
   va_list ap;
   va_start(ap, fmt);
-  verror_at(loc, fmt, ap);
+  verror_at(lineno, loc, fmt, ap);
 }
 
 void error_tok(Token *tok, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  verror_at(tok->loc, fmt, ap);
+  verror_at(tok->lineno, tok->loc, fmt, ap);
 }
 
 // Consumes the current token if it matches `s`.
@@ -211,6 +210,21 @@ static Token *read_string_leteral(Token *cur, char *start) {
   return tok;
 }
 
+// Initialize line info for all tokens.
+static void add_line_info(Token *tok) {
+  char *p = current_input;
+  int lineno = 1;
+
+  do {
+    if (p == tok->loc) {
+      tok->lineno = lineno;
+      tok = tok->next;
+    }
+    if (*p == '\n')
+      lineno++;
+  } while (*p++);
+}
+
 // Tokenize a given string and returns new tokens.
 Token *tokenize(char *filename, char *p) {
   current_filename = filename;
@@ -286,6 +300,7 @@ Token *tokenize(char *filename, char *p) {
   }
 
   new_token(TK_EOF, cur, p, 0);
+  add_line_info(head.next);
   convert_keywords(head.next);
   return head.next;
 }
