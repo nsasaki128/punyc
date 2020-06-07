@@ -9,6 +9,7 @@ $(OBJS): punyc.h
 
 test: punyc
 	./punyc tests/tests.c > tmp.s
+	echo 'int char_fun() { return 257; }' | gcc -xc -c -o tmp2.o -
 	gcc -static -o tmp tmp.s
 	./tmp
 
