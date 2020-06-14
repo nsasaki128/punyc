@@ -43,6 +43,9 @@ int fib(int x) {
 
 int sub_char(char a, char b, char c) { return a-b-c; }
 
+int *g1_ptr() { return &g1; }
+char int_to_char(int x) { return x; }
+
 int main() {
   assert(0, 0, "0");
   assert(42, 42, "42");
@@ -332,6 +335,9 @@ int main() {
 
   assert(1, ({ char x[3]; x[0]=0; x[1]=1; x[2]=2; char *y=x+1; y[0]; }), "({ char x[3]; x[0]=0; x[1]=1; x[2]=2; char *y=x+1; y[0]; })");
   assert(0, ({ char x[3]; x[0]=0; x[1]=1; x[2]=2; char *y=x+1; y[-1]; }), "({ char x[3]; x[0]=0; x[1]=1; x[2]=2; char *y=x+1; y[-1]; })");
+
+  assert(3, *g1_ptr(), "*g1_ptr()");
+  assert(5, int_to_char(261), "int_to_char(261)");
 
   printf("OK\n");
   return 0;
