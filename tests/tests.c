@@ -347,7 +347,7 @@ int main() {
   assert(5, int_to_char(261), "int_to_char(261)");
 
   assert(-5, div_long(-10, 2), "div_long(-10, 2)");
-  
+
   assert(0, ({ _Bool x=0; x; }), "({ _Bool x=0; x; })");
   assert(1, ({ _Bool x=1; x; }), "({ _Bool x=1; x; })");
   assert(1, ({ _Bool x=2; x; }), "({ _Bool x=2; x; })");
@@ -360,6 +360,10 @@ int main() {
   assert(0, bool_fn_sub(-3), "bool_fn_sub(-3)");
   assert(1, bool_fn_add(0), "bool_fn_add(0)");
   assert(1, bool_fn_sub(0), "bool_fn_sub(0)");
+
+  assert(97, 'a', "'a'");
+  assert(10, '\n', "'\\n'");
+  assert(4, sizeof('a'), "sizeof('a')");
 
   printf("OK\n");
   return 0;
