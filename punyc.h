@@ -131,6 +131,7 @@ struct Function {
   Function *next;
   char *name;
   Var *params;
+  bool is_static;
 
   Node *node;
   Var *locals;
