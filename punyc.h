@@ -78,7 +78,8 @@ typedef enum {
   ND_LT,        // <
   ND_LE,        // <=
   ND_ASSIGN,    // =
-  ND_MEMBER,    // , (struct member access)
+  ND_COMMA,     // ,
+  ND_MEMBER,    // . (struct member access)
   ND_ADDR,      // unary &
   ND_DEREF,     // unary *
   ND_RETURN,    // "return"
