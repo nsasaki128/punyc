@@ -176,8 +176,9 @@ typedef enum {
 
 struct Type {
   TypeKind kind;
-  int size;      // sizeof() value
-  int align;     // alignment
+  int size;           // sizeof() value
+  int align;          // alignment
+  bool is_incomplete; // incomplete type
   
   // Pointer
   Type *base;
@@ -201,6 +202,7 @@ struct Type {
 struct Member {
   Member *next;
   Type *ty;
+  Token *tok; // for error message
   Token *name;
   int offset;
 };
