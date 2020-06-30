@@ -333,7 +333,14 @@ Token *tokenize(char *filename, char *p) {
       continue;
     }
 
-    // Multi-letter punctuators
+    // Three-letter punctuators
+    if (startswith(p, "<<=") || startswith(p, ">>=")) {
+      cur = new_token(TK_RESERVED, cur, p, 3);
+      p += 3;
+      continue;
+    }
+
+    // Two-letter punctuators
     if (startswith(p, "==") || startswith(p, "!=") ||
         startswith(p, "<=") || startswith(p, ">=") ||
         startswith(p, "->") || startswith(p, "+=") ||
@@ -342,7 +349,8 @@ Token *tokenize(char *filename, char *p) {
         startswith(p, "--") || startswith(p, "%=") ||
         startswith(p, "&=") || startswith(p, "|=") ||
         startswith(p, "^=") || startswith(p, "&&") ||
-        startswith(p, "||")) {
+        startswith(p, "||") || startswith(p, "<<") ||
+        startswith(p, ">>")) {
       cur = new_token(TK_RESERVED, cur, p, 2);
       p += 2;
       continue;
