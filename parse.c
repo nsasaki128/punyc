@@ -651,6 +651,25 @@ static Node *declaration(Token **rest, Token *tok) {
   return node;
 }
 
+static void skip_excess_elements(Token **rest, Token *tok) {
+  while (!consume_end(&tok, tok)) {
+    tok = skip(tok, ",");
+    if (equal(tok, "{"))
+      skip_excess_elements(&tok, tok->next);
+    else
+      assign(&tok, tok);
+  }
+  *rest = tok;
+}
+
+static Token *skip_end(Token *tok) {
+  if (consume_end(&tok, tok))
+    return tok;
+  warn_tok(tok, "excess elements in initializer");
+  skip_excess_elements(&tok, tok);
+  return tok;
+}
+
 // initializer = "{" initializer ("," initializer)* ","? "}"
 //             | assign
 static Initializer *initializer(Token **rest, Token *tok, Type *ty) {
@@ -663,11 +682,25 @@ static Initializer *initializer(Token **rest, Token *tok, Type *ty) {
         tok = skip(tok, ",");
       init->children[i] = initializer(&tok, tok, ty->base);
     }
-    *rest = expect_end(tok);
+    *rest = skip_end(tok);
     return init;
   }
 
   return new_init(ty, 0, assign(rest, tok), tok);
+}
+
+// string-initializer = string-literal
+static Initializer *string_initializer(Token **rest, Token *tok, Type *ty) {
+  Initializer *init = new_init(ty, ty->array_len, NULL, tok);
+
+  int len = (ty->array_len < tok->cont_len) ? ty->array_len : tok->cont_len;
+
+  for (int i = 0; i < len; i++) {
+    Node *expr = new_num(tok->contents[i], tok);
+    init->children[i] = new_init(ty->base, 0, expr, tok);
+  }
+  *rest = tok->next;
+  return init;
 }
 
 static Node *create_lvar_init(Node *cur, Initializer *init, Var *var, Type *ty, int offset) {
