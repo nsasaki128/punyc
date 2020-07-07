@@ -99,6 +99,7 @@ static Type *enum_specifier(Token **rest, Token *tok);
 static Type *type_suffix(Token **rest, Token *tok, Type *ty);
 static Type *declarator(Token **rest, Token *tok, Type *ty);
 static Node *declaration(Token **rest, Token *tok);
+static Initializer *initializer(Token **rest, Token *tok, Type *ty);
 static Node *lvar_initializer(Token **rest, Token *tok, Var *var);
 static Node *compound_stmt(Token **rest, Token *tok);
 static Node *stmt(Token **rest, Token *tok);
@@ -496,9 +497,8 @@ static Type *type_suffix(Token **rest, Token *tok, Type *ty) {
   if (equal(tok, "("))
     return func_params(rest, tok->next, ty);
 
-  if (equal(tok, "[")) {
+  if (equal(tok, "["))
     return array_dimensions(rest, tok->next, ty);
-  }
 
   *rest = tok;
   return ty;
@@ -519,7 +519,6 @@ static Type *declarator(Token **rest, Token *tok, Type *ty) {
 
   if (tok->kind != TK_IDENT)
     error_tok(tok, "expected a cariable name");
-
   ty = type_suffix(rest, tok->next, ty);
   ty->name = tok;
   return ty;
@@ -640,7 +639,6 @@ static Node *declaration(Token **rest, Token *tok) {
     }
 
     Var *var = new_lvar(get_ident(ty->name), ty);
-
     if (equal(tok, "="))
       cur = cur->next = lvar_initializer(&tok, tok->next, var);
   }
@@ -670,30 +668,11 @@ static Token *skip_end(Token *tok) {
   return tok;
 }
 
-// initializer = "{" initializer ("," initializer)* ","? "}"
-//             | assign
-static Initializer *initializer(Token **rest, Token *tok, Type *ty) {
-  if (ty->kind == TY_ARRAY) {
-    tok = skip(tok, "{");
-    Initializer *init = new_init(ty, ty->array_len, NULL, tok);
-
-    for (int i = 0; i < ty->array_len && !is_end(tok); i++) {
-      if (i > 0)
-        tok = skip(tok, ",");
-      init->children[i] = initializer(&tok, tok, ty->base);
-    }
-    *rest = skip_end(tok);
-    return init;
-  }
-
-  return new_init(ty, 0, assign(rest, tok), tok);
-}
-
-// string-initializer = string-literal
+// string-ilinializer = string-literal
 static Initializer *string_initializer(Token **rest, Token *tok, Type *ty) {
   Initializer *init = new_init(ty, ty->array_len, NULL, tok);
-
-  int len = (ty->array_len < tok->cont_len) ? ty->array_len : tok->cont_len;
+  int len = (ty->array_len < tok->cont_len)
+    ? ty->array_len : tok->cont_len;
 
   for (int i = 0; i < len; i++) {
     Node *expr = new_num(tok->contents[i], tok);
@@ -703,7 +682,33 @@ static Initializer *string_initializer(Token **rest, Token *tok, Type *ty) {
   return init;
 }
 
-static Node *create_lvar_init(Node *cur, Initializer *init, Var *var, Type *ty, int offset) {
+// array-initializer = "{" initializer ("," initializer)* ","? "}"
+static Initializer *array_initializer(Token **rest, Token *tok, Type *ty) {
+  tok = skip(tok, "{");
+  Initializer *init = new_init(ty, ty->array_len, NULL, tok);
+
+  for (int i = 0; i < ty->array_len && !is_end(tok); i++) {
+    if (i > 0)
+      tok = skip(tok, ",");
+    init->children[i] = initializer(&tok, tok, ty->base);
+  }
+  *rest = skip_end(tok);
+  return init;
+}
+
+// initializer = string-initializer | array-initializer | assign
+static Initializer *initializer(Token **rest, Token *tok, Type *ty) {
+  if (ty->kind == TY_ARRAY && ty->base->kind == TY_CHAR && tok->kind == TK_STR)
+    return string_initializer(rest, tok, ty);
+  
+  if (ty->kind == TY_ARRAY)
+    return array_initializer(rest, tok, ty);
+
+  return new_init(ty, 0, assign(rest, tok), tok);
+}
+
+static Node 
+*create_lvar_init(Node *cur, Initializer *init, Var *var, Type *ty, int offset) {
   if (ty->kind == TY_ARRAY) {
     int sz = size_of(ty->base);
     for (int i = 0; i < ty->array_len; i++) {
@@ -751,6 +756,7 @@ static Node *lvar_initializer(Token **rest, Token *tok, Var *var) {
   node->body = head.next;
   return node;
 }
+
 static bool is_typename(Token *tok) {
   static char *kw[] = {
     "void", "_Bool", "char", "short", "int", "long", "struct", "union",
@@ -763,6 +769,7 @@ static bool is_typename(Token *tok) {
   }
   return find_typedef(tok);
 }
+
 // stmt = "return" expr ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "switch" "(" expr ")" stmt
@@ -777,7 +784,6 @@ static bool is_typename(Token *tok) {
 //      | "{" compund-stmt
 //      | expr ";"
 static Node *stmt(Token **rest, Token *tok) {
-
   if (equal(tok, "return")) {
     Node *node = new_node(ND_RETURN, tok);
     Node *exp = expr(&tok, tok->next);
@@ -909,7 +915,6 @@ static Node *stmt(Token **rest, Token *tok) {
 // compund-stmt = (declaration | stmt)* "}"
 static Node *compound_stmt(Token **rest, Token *tok) {
   Node *node = new_node(ND_BLOCK, tok);
-
   Node head = {};
   Node *cur = &head;
 
@@ -1021,14 +1026,18 @@ static Node *to_assign(Node *binary) {
   Var *var = new_lvar("", pointer_to(binary->lhs->ty));
   Token *tok = binary->tok;
 
-  Node *expr1 = new_binary(ND_ASSIGN, new_var_node(var, tok), new_unary(ND_ADDR, binary->lhs, tok), tok);
-  Node *expr2 = new_binary(ND_ASSIGN,
-                           new_unary(ND_DEREF, new_var_node(var, tok), tok),
-                           new_binary(binary->kind,
-                                      new_unary(ND_DEREF, new_var_node(var, tok), tok),
-                                      binary->rhs,
-                                      tok),
-                           tok);
+  Node *expr1 = new_binary(ND_ASSIGN, new_var_node(var, tok),
+                           new_unary(ND_ADDR, binary->lhs, tok), tok);
+
+  Node *expr2 = 
+    new_binary(ND_ASSIGN,
+               new_unary(ND_DEREF, new_var_node(var, tok), tok),
+               new_binary(binary->kind,
+                          new_unary(ND_DEREF, new_var_node(var, tok), tok),
+                          binary->rhs,
+                          tok),
+               tok);
+
   return new_binary(ND_COMMA, expr1, expr2, tok);
 }
 
@@ -1225,7 +1234,6 @@ static Node *shift(Token **rest, Token *tok) {
   }
 }
 
-
 // In C, `+` operator is overloaded to perform the pointer arithmetic.
 // If p is a point, p+n adds not n but sizeof(*p)*n to the value of p,
 // so that p+n points to the location n elements (not bytes) ahead of p.
@@ -1284,6 +1292,7 @@ static Node *add(Token **rest, Token *tok) {
 
   for (;;) {
     Token *start = tok;
+
     if (equal(tok, "+")) {
       node = new_add(node, mul(&tok, tok->next), start);
       continue;
@@ -1298,7 +1307,6 @@ static Node *add(Token **rest, Token *tok) {
     return node;
   }
 }
-
 
 // mul = cast ("*" cast | "/" cast | "%" cast)*
 static Node *mul(Token **rest, Token *tok) {
@@ -1364,9 +1372,11 @@ static Node *unary(Token **rest, Token *tok) {
   if (equal(tok, "~"))
     return new_unary(ND_BITNOT, cast(rest, tok->next), tok);
 
+  // Read ++i as i+=1
   if (equal(tok, "++"))
     return to_assign(new_add(unary(rest, tok->next), new_num(1, tok), tok));
 
+  // Read --i as i-=1
   if (equal(tok, "--"))
     return to_assign(new_sub(unary(rest, tok->next), new_num(1, tok), tok));
 
@@ -1616,6 +1626,7 @@ static Node *primary(Token **rest, Token *tok) {
     add_type(node);
     return new_num(size_of(node->ty), tok);
   }
+
   if (tok->kind == TK_IDENT) {
     // Function call
     if (equal(tok->next, "(")) {
