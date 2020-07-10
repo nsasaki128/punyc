@@ -843,6 +843,16 @@ create_gvar_init(GvarInitializer *cur, Initializer *init, Type *ty, int offset) 
         cur = create_gvar_init(cur, init->children[i], ty->base, offset + sz * i);
     return cur;
   }
+
+  if (ty->kind == TY_STRUCT) {
+    int i = 0;
+    for (Member *mem = ty->members; mem; mem = mem->next, i++) {
+      if (init->children[i])
+        cur = create_gvar_init(cur, init->children[i], mem->ty, offset + mem->offset);
+    }
+    return cur;
+  }
+
   long val = eval(init->expr);
   return new_gvar_init_val(cur, offset, size_of(ty), val);
 }
