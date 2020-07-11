@@ -160,12 +160,20 @@ struct Node {
   long val;
 };
 
-// Global variable initializer.
+// Global variable initializer. Global variables can be initialized
+// either by a constatnt expression or a pointer to another global
+// bariable with an addend.
 struct GvarInitializer {
   GvarInitializer *next;
   int offset;
+
+  // Scalar value
   int sz;
   long val;
+
+  // Reference to another global variable
+  char *label;
+  long addend;
 };
 
 typedef struct Function Function;
