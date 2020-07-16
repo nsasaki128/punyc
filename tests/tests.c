@@ -44,7 +44,7 @@ int assert(long expected, long actual, char *code) {
   }
 }
 
-int ret3() { return 3; return 5; }
+int ret3(void) { return 3; return 5; }
 int ret5() { return 5; }
 int add2(int x, int y) { return x+y; }
 int sub2(int x, int y) { return x-y; }
