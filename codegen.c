@@ -477,6 +477,7 @@ static void emit_data(Program *prog) {
     if (var->initializer) 
       continue;
 
+    printf(".align %d\n", var->ty->align);
     printf("%s:\n", var->name);
     printf("  .zero %d\n", size_of(var->ty));
   }
@@ -487,6 +488,7 @@ static void emit_data(Program *prog) {
     if (!var->initializer) 
       continue;
     
+    printf(".align %d\n", var->ty->align);
     printf("%s:\n", var->name);
 
     int offset = 0;
