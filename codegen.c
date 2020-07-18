@@ -269,7 +269,7 @@ static void gen_expr(Node *node) {
         printf("  add rsp, 8\n");
         printf("  pop %s\n", argreg64[i]);
       }
-      
+
       printf("  mov rax, 0\n");
       printf("  call %s\n", node->funcname);
 
@@ -433,7 +433,7 @@ static void gen_stmt(Node *node) {
   }
   case ND_CASE:
     printf(".L.case.%d:\n", node->case_label);
-    gen_stmt(node->lhs); 
+    gen_stmt(node->lhs);
     return;
   case ND_BLOCK:
     for (Node *n = node->body; n; n = n->next)
@@ -474,20 +474,20 @@ static void emit_data(Program *prog) {
   printf(".bss\n");
 
   for (Var *var = prog->globals; var; var = var->next) {
-    if (var->initializer) 
+    if (var->initializer)
       continue;
 
     printf(".align %d\n", var->ty->align);
     printf("%s:\n", var->name);
     printf("  .zero %d\n", size_of(var->ty));
   }
-  
+
   printf(".data\n");
 
   for (Var *var = prog->globals; var; var = var->next) {
-    if (!var->initializer) 
+    if (!var->initializer)
       continue;
-    
+
     printf(".align %d\n", var->ty->align);
     printf("%s:\n", var->name);
 

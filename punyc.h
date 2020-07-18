@@ -65,7 +65,7 @@ struct Var {
 
   // Local variable
   int offset;
-  
+
   // Gloval variable
   char *contents;
   int cont_len;
@@ -155,7 +155,7 @@ struct Node {
 
   // Variable
   Var *var;
-  
+
   // Integer literal
   long val;
 };
@@ -205,11 +205,11 @@ typedef enum {
   TY_BOOL,
   TY_CHAR,
   TY_SHORT,
-  TY_INT, 
+  TY_INT,
   TY_LONG,
   TY_ENUM,
-  TY_PTR, 
-  TY_FUNC, 
+  TY_PTR,
+  TY_FUNC,
   TY_ARRAY,
   TY_STRUCT,
 } TypeKind;
@@ -219,7 +219,7 @@ struct Type {
   int size;           // sizeof() value
   int align;          // alignment
   bool is_incomplete; // incomplete type
-  
+
   // Pointer
   Type *base;
 

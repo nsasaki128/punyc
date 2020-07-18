@@ -118,7 +118,7 @@ static bool is_hex(char c) {
 }
 
 static int from_hex(char c) {
-  if ('0' <= c && c <= '9') 
+  if ('0' <= c && c <= '9')
     return c - '0';
   if ('a' <= c && c <= 'f')
     return c - 'a' + 10;
@@ -140,7 +140,7 @@ static bool is_keyword(Token *tok) {
 }
 
 static void convert_keywords(Token *tok) {
-  for (Token *t = tok; t->kind != TK_EOF; t = t->next) 
+  for (Token *t = tok; t->kind != TK_EOF; t = t->next)
     if (t->kind == TK_IDENT && is_keyword(t))
       t->kind = TK_RESERVED;
 }
@@ -152,7 +152,7 @@ static char *read_escaped_char(char *result, char *p) {
       p++;
       if (!is_hex(*p))
         error_at(p, "invalid hex escape sequece");
-      
+
       int r = 0;
       for (; is_hex(*p); p++) {
         r = (r << 4) | from_hex(*p);
@@ -211,9 +211,9 @@ static Token *read_string_leteral(Token *cur, char *start) {
       buf[len++] = *p++;
     }
   }
-  
+
   buf[len++] = '\0';
-  
+
   Token *tok = new_token(TK_STR, cur, start, p - start + 1);
   tok->contents = buf;
   tok->cont_len = len;
@@ -224,7 +224,7 @@ static Token *read_char_literal(Token *cur, char *start) {
   char *p = start + 1;
   if (*p == '\0')
     error_at(start, "unclosed char literal");
-  
+
   char c;
   if (*p == '\\')
     p = read_escaped_char(&c, p + 1);
@@ -257,7 +257,7 @@ static Token *read_int_literal(Token *cur, char *start) {
   long val = strtoul(p, &p, base);
   if (is_alnum(*p))
     error_at(p, "invalid digit");
-  
+
   Token *tok = new_token(TK_NUM, cur, start, p - start);
   tok->val = val;
   return tok;

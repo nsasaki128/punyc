@@ -29,20 +29,20 @@ static char *read_file(char *path) {
 
   if (fp != stdin)
     fclose(fp);
-  
+
   // Canonicalize the last line by appending "\n"
   // if it does not end with a newline.
   if (nread == 0 || buf[nread - 1] != '\n')
     buf[nread++] = '\n';
   buf[nread] = '\0';
-  
+
   // Emit a .file directive for the assembler.
   printf(".file 1 \"%s\"\n", path);
   return buf;
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) 
+  if (argc != 2)
     error("%s: invalid number of arguments\n", argv[0]);
 
   // Tokenize and parse.

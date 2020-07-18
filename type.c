@@ -85,7 +85,7 @@ static void usual_arith_conv(Node **lhs, Node **rhs) {
 void add_type(Node *node) {
   if (!node || node->ty)
     return;
-  
+
   add_type(node->lhs);
   add_type(node->rhs);
   add_type(node->cond);

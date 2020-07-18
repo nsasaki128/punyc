@@ -141,7 +141,7 @@ static void leave_scope(void) {
 
   while (var_scope && var_scope->depth > scope_depth)
     var_scope = var_scope->next;
-  
+
   while (tag_scope && tag_scope->depth > scope_depth)
     tag_scope = tag_scope->next;
 }
@@ -366,14 +366,14 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
     if (equal(tok, "typedef") || equal(tok, "static") || equal(tok, "extern")) {
       if (!attr)
         error_tok(tok, "storage class specifier is not allowed in this context");
-      
+
       if (equal(tok, "typedef"))
         attr->is_typedef = true;
       else if (equal(tok, "static"))
         attr->is_static = true;
       else
         attr->is_extern = true;
-      
+
       if (attr->is_typedef + attr->is_static + attr->is_extern > 1)
         error_tok(tok, "typedef and static may not be used together.");
       tok = tok->next;
@@ -385,7 +385,7 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
     if (equal(tok, "struct") || equal(tok, "union") || equal(tok, "enum") || ty2) {
       if (counter)
         break;
-      
+
       if (equal(tok, "struct")) {
         ty = struct_decl(&tok, tok->next);
       } else if (equal(tok, "union")) {
@@ -408,15 +408,15 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
       counter += BOOL;
     else if (equal(tok, "char"))
       counter += CHAR;
-    else if (equal(tok, "short")) 
+    else if (equal(tok, "short"))
       counter += SHORT;
-    else if (equal(tok, "int")) 
+    else if (equal(tok, "int"))
       counter += INT;
-    else if (equal(tok, "long")) 
+    else if (equal(tok, "long"))
       counter += LONG;
     else
       error_tok(tok, "internal error");
-  
+
     switch (counter) {
     case VOID:
       ty = ty_void;
@@ -443,7 +443,7 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
     default:
       error_tok(tok, "invaled type");
     }
-    
+
     tok = tok->next;
   }
 
@@ -502,7 +502,7 @@ static Type *array_dimensions(Token **rest, Token *tok, Type *ty) {
 }
 
 // type-suffix = "(" func-params
-//             | "[" array-dimensions 
+//             | "[" array-dimensions
 //             | ε
 static Type *type_suffix(Token **rest, Token *tok, Type *ty) {
   if (equal(tok, "("))
@@ -519,7 +519,7 @@ static Type *type_suffix(Token **rest, Token *tok, Type *ty) {
 static Type *declarator(Token **rest, Token *tok, Type *ty) {
   while (consume(&tok, tok, "*"))
     ty = pointer_to(ty);
-  
+
   if (equal(tok, "(")) {
     Type *placeholder = calloc(1, sizeof(Type));
     Type *new_ty = declarator(&tok, tok->next, placeholder);
@@ -609,11 +609,11 @@ static Type *enum_specifier(Token **rest, Token *tok) {
   while (!is_end(tok)) {
     if (i++ > 0)
       tok = skip(tok, ",");
-    
+
     char *name = get_ident(tok);
     tok = tok->next;
 
-    if (equal(tok, "=")) 
+    if (equal(tok, "="))
       val = const_expr(&tok, tok->next);
 
     VarScope *sc = push_scope(name);
@@ -639,11 +639,11 @@ static Node *declaration(Token **rest, Token *tok) {
   while (!equal(tok, ";")) {
     if (cnt++ > 0)
       tok = skip(tok, ",");
-    
+
     Type *ty = declarator(&tok, tok, basety);
     if (ty->kind == TY_VOID)
       error_tok(tok, "variable delared void");
-    
+
     if (attr.is_typedef) {
       push_scope(get_ident(ty->name))->type_def = ty;
       continue;
@@ -653,7 +653,7 @@ static Node *declaration(Token **rest, Token *tok) {
     if (equal(tok, "="))
       cur = cur->next = lvar_initializer(&tok, tok->next, var);
   }
-    
+
   Node *node = new_node(ND_BLOCK, tok);
   node->body = head.next;
   *rest = tok->next;
@@ -748,7 +748,7 @@ static Initializer *struct_initializer(Token **rest, Token *tok, Type *ty) {
   }
 
   int len = 0;
-  for (Member *mem = ty->members; mem; mem = mem->next) 
+  for (Member *mem = ty->members; mem; mem = mem->next)
     len++;
 
   Initializer *init = new_init(ty, len, NULL, tok);
@@ -773,13 +773,13 @@ static Initializer *struct_initializer(Token **rest, Token *tok, Type *ty) {
 static Initializer *initializer(Token **rest, Token *tok, Type *ty) {
   if (ty->kind == TY_ARRAY && ty->base->kind == TY_CHAR && tok->kind == TK_STR)
     return string_initializer(rest, tok, ty);
-  
+
   if (ty->kind == TY_ARRAY)
     return array_initializer(rest, tok, ty);
 
   if (ty->kind == TY_STRUCT)
     return struct_initializer(rest, tok, ty);
-  
+
   Token *start = tok;
   bool has_paren = consume(&tok, tok, "{");
   Initializer *init = new_init(ty, 0, assign(&tok, tok), start);
@@ -789,7 +789,7 @@ static Initializer *initializer(Token **rest, Token *tok, Type *ty) {
   return init;
 }
 
-static Node 
+static Node
 *create_lvar_init(Node *cur, Initializer *init, Var *var, Type *ty, int offset) {
   if (ty->kind == TY_ARRAY) {
     int sz = size_of(ty->base);
@@ -932,7 +932,7 @@ static bool is_typename(Token *tok) {
 //      | "switch" "(" expr ")" stmt
 //      | "case" const-expr ":" stmt
 //      | "default" ":" stmt
-//      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt 
+//      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //      | "while" "(" expr ")" stmt
 //      | "break" ";"
 //      | "continue" ";"
@@ -1036,7 +1036,7 @@ static Node *stmt(Token **rest, Token *tok) {
     node->then = stmt(rest, tok);
     return node;
   }
-  
+
   if (equal(tok, "break")) {
     *rest = skip(tok->next, ";");
     return new_node(ND_BREAK, tok);
@@ -1086,7 +1086,7 @@ static Node *compound_stmt(Token **rest, Token *tok) {
   }
 
   leave_scope();
-  
+
   node->body = head.next;
   *rest = tok->next;
   return node;
@@ -1105,7 +1105,7 @@ static Node *expr(Token **rest, Token *tok) {
 
   if(equal(tok, ","))
     return new_binary(ND_COMMA, node, expr(rest, tok->next), tok);
-  
+
   *rest = tok;
   return node;
 }
@@ -1205,7 +1205,7 @@ static Node *to_assign(Node *binary) {
   Node *expr1 = new_binary(ND_ASSIGN, new_var_node(var, tok),
                            new_unary(ND_ADDR, binary->lhs, tok), tok);
 
-  Node *expr2 = 
+  Node *expr2 =
     new_binary(ND_ASSIGN,
                new_unary(ND_DEREF, new_var_node(var, tok), tok),
                new_binary(binary->kind,
@@ -1249,7 +1249,7 @@ static Node *assign(Token **rest, Token *tok) {
 
   if (equal(tok, "^="))
     return to_assign(new_binary(ND_BITXOR, node, assign(rest, tok->next), tok));
-  
+
   if (equal(tok, "<<="))
     return to_assign(new_binary(ND_SHL, node, assign(rest, tok->next), tok));
 
@@ -1335,7 +1335,7 @@ static Node *bitand(Token **rest, Token *tok) {
 // equality = relational ("==" relational | "!=" relational)*
 static Node *equality(Token **rest, Token *tok) {
   Node *node = relational(&tok, tok);
-  
+
   for (;;) {
     if (equal(tok, "==")) {
       node = new_binary(ND_EQ, node, NULL, tok);
@@ -1404,7 +1404,7 @@ static Node *shift(Token **rest, Token *tok) {
       node->rhs = add(&tok, tok->next);
       continue;
     }
-  
+
   *rest = tok;
   return node;
   }
@@ -1487,7 +1487,7 @@ static Node *add(Token **rest, Token *tok) {
 // mul = cast ("*" cast | "/" cast | "%" cast)*
 static Node *mul(Token **rest, Token *tok) {
   Node *node = cast(&tok, tok);
-  
+
   for (;;) {
     if (equal(tok, "*")) {
       node = new_binary(ND_MUL, node, NULL, tok);
@@ -1673,7 +1673,7 @@ static Node *struct_ref(Node *lhs, Token *tok) {
   add_type(lhs);
   if (lhs->ty->kind != TY_STRUCT)
     error_tok(lhs->tok, "not a struct");
-  
+
   Node *node = new_unary(ND_MEMBER, lhs, tok);
   node->member = get_struct_member(lhs->ty, tok);
   return node;
@@ -1689,8 +1689,8 @@ static Node *new_inc_dec(Node *lhs, Token *tok, bool is_inc) {
   Node *expr1 = new_binary(ND_ASSIGN, new_var_node(var, tok),
                            new_unary(ND_ADDR, lhs, tok), tok);
 
-  Node *expr2 = 
-    new_binary(ND_ASSIGN, 
+  Node *expr2 =
+    new_binary(ND_ASSIGN,
                new_unary(ND_DEREF, new_var_node(var, tok), tok),
                new_add(new_unary(ND_DEREF, new_var_node(var, tok), tok),
                        new_num(addend, tok), tok),
@@ -1698,7 +1698,7 @@ static Node *new_inc_dec(Node *lhs, Token *tok, bool is_inc) {
 
   Node *expr3 = new_add(new_unary(ND_DEREF, new_var_node(var, tok), tok),
                         new_num(-addend, tok), tok);
-                      
+
   return new_binary(ND_COMMA, expr1, new_binary(ND_COMMA, expr2, expr3, tok), tok);
 }
 
@@ -1762,12 +1762,12 @@ static Node *func_args(Token **rest, Token *tok) {
   return head.next;
 }
 
-// primary = "(" "{" stmt stmt* "}" ")" 
-//         | "(" expr ")" 
+// primary = "(" "{" stmt stmt* "}" ")"
+//         | "(" expr ")"
 //         | "sizeof" "(" type-name ")"
-//         | "sizeof" unary 
-//         | ident func-args? 
-//         | str 
+//         | "sizeof" unary
+//         | ident func-args?
+//         | str
 //         | num
 static Node *primary(Token **rest, Token *tok) {
   if (equal(tok, "(") && equal(tok->next, "{")) {
@@ -1784,7 +1784,7 @@ static Node *primary(Token **rest, Token *tok) {
       error_tok(cur->tok, "statement expression returning void is not supported");
     return node;
   }
-  
+
   if (equal(tok, "(")) {
     Node *node = expr(&tok, tok->next);
     *rest = skip(tok, ")");
@@ -1844,7 +1844,7 @@ static Node *primary(Token **rest, Token *tok) {
     return new_var_node(var, tok);
   }
 
-  if (tok->kind != TK_NUM) 
+  if (tok->kind != TK_NUM)
     error_tok(tok, "expected expression");
 
   Node *node = new_num(tok->val, tok);
@@ -1876,14 +1876,14 @@ Program *parse(Token *tok) {
       continue;
     }
 
-    // Function 
+    // Function
     if (ty->kind == TY_FUNC) {
       current_fn = new_gvar(get_ident(ty->name), ty, false);
       if (!consume(&tok, tok, ";"))
         cur = cur->next = funcdef(&tok, start);
       continue;
     }
-    
+
     // Global variable
     for (;;) {
       Var *var = new_gvar(get_ident(ty->name), ty, true);
