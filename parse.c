@@ -1773,6 +1773,7 @@ static Node *func_args(Token **rest, Token *tok) {
 //         | "(" expr ")"
 //         | "sizeof" "(" type-name ")"
 //         | "sizeof" unary
+//         | "alignof" "(" type-name ")"
 //         | ident func-args?
 //         | str
 //         | num
@@ -1808,6 +1809,13 @@ static Node *primary(Token **rest, Token *tok) {
     Node *node = unary(rest, tok->next);
     add_type(node);
     return new_num(size_of(node->ty), tok);
+  }
+
+  if (equal(tok, "alignof")) {
+    tok = skip(tok->next, "(");
+    Type *ty = typename(&tok, tok);
+    *rest = skip(tok, ")");
+    return new_num(ty->align, tok);
   }
 
   if (tok->kind == TK_IDENT) {
