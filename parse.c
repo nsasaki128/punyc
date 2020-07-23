@@ -1549,14 +1549,37 @@ static Node *mul(Token **rest, Token *tok) {
   }
 }
 
-// cast = "(" type-name ")" cast | unary
+// compound-literal = initializer "}"
+static Node *compound_literal(Token **rest, Token *tok, Type *ty, Token *start) {
+  if (scope_depth == 0) {
+    Var *var = new_gvar(new_label(), ty, true);
+    var->initializer = gvar_initializer(rest, tok, ty);
+    return new_var_node(var, start);
+  }
+
+  Var *var = new_lvar(new_label(), ty);
+  Node *lhs = new_node(ND_STMT_EXPR, tok);
+  lhs->body = lvar_initializer(rest, tok, var)->body;
+  Node *rhs = new_var_node(var, tok);
+  return new_binary(ND_COMMA, lhs, rhs, tok);
+}
+
+// cast = "(" type-name ")" "{" compound-literal
+//      | "(" type-name ")" cast
+//      | unary
 static Node *cast(Token **rest, Token *tok) {
   if (equal(tok, "(") && is_typename(tok->next)) {
-    Node *node = new_unary(ND_CAST, NULL, tok);
-    node->ty = typename(&tok, tok->next);
+    Token *start = tok;
+    Type *ty = typename(&tok, tok->next);
     tok = skip(tok, ")");
+
+    if (equal(tok, "{"))
+      return compound_literal(rest, tok, ty, start);
+
+    Node *node = new_unary(ND_CAST, NULL, start);
     node->lhs = cast(rest, tok);
     add_type(node->lhs);
+    node->ty = ty;
     return node;
   }
 
