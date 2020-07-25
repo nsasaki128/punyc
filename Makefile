@@ -7,15 +7,21 @@ punyc: $(OBJS)
 
 $(OBJS): punyc.h
 
-test: punyc
+punyc-stage2: punyc $(SRCS) punyc.h self.sh
+	./self.sh
+
+test: punyc tests/extern.o
 	./punyc tests/tests.c > tmp.s
-	echo 'int ext1; int *ext2; int ext3 = 5; int char_fn() { return 257; }' \
-	     'int static_fn() { return 5; }' | \
-	gcc -xc -c -fno-common -o tmp2.o -
-	gcc -static -o tmp tmp.s tmp2.o
+	gcc -static -o tmp tmp.s tests/extern.o
+
+	./tmp
+
+test-stage2: punyc-stage2 tests/extern.o
+	./punyc-stage2 tests/tests.c > tmp.s
+	gcc -static -o tmp tmp.s tests/extern.o
 	./tmp
 
 clean:
-	rm -f punyc *.o *~ tmp*
+	rm -rf punyc punyc-stage* *.o *~ tmp* tests/*~ tests/*.o
 
 .PHONY: test clean

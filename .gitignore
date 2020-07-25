@@ -3,6 +3,7 @@
 **/a.out
 tmp*
 punyc
+punyc-stage*
 
 # Prerequisites
 *.d
