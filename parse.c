@@ -375,6 +375,7 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
 
   Type *ty = ty_int;
   int counter = 0;
+  bool is_const = false;
 
   while (is_typename(tok)) {
     // Handle storage class specifiers.
@@ -392,6 +393,11 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
       if (attr->is_typedef + attr->is_static + attr->is_extern > 1)
         error_tok(tok, "typedef and static may not be used together.");
       tok = tok->next;
+      continue;
+    }
+
+    if (consume(&tok, tok, "const")) {
+      is_const = true;
       continue;
     }
 
@@ -505,6 +511,11 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
     tok = tok->next;
   }
 
+  if (is_const) {
+    ty = copy_type(ty);
+    ty->is_const = true;
+  }
+
   *rest = tok;
   return ty;
 }
@@ -582,10 +593,20 @@ static Type *type_suffix(Token **rest, Token *tok, Type *ty) {
   return ty;
 }
 
-// declarator =  "*"* ("(" declaraoter ")" | ident) type-suffix
-static Type *declarator(Token **rest, Token *tok, Type *ty) {
-  while (consume(&tok, tok, "*"))
+// pointers = ("*" "const"*)*
+static Type *pointers(Token **rest, Token *tok, Type *ty) {
+  while (consume(&tok, tok, "*")) {
     ty = pointer_to(ty);
+    while (consume(&tok, tok, "const"))
+      ty->is_const = true;
+  }
+  *rest = tok;
+  return ty;
+}
+
+// declarator =  pointers ("(" declaraoter ")" | ident) type-suffix
+static Type *declarator(Token **rest, Token *tok, Type *ty) {
+  ty = pointers(&tok, tok, ty);
 
   if (equal(tok, "(")) {
     Type *placeholder = calloc(1, sizeof(Type));
@@ -602,12 +623,9 @@ static Type *declarator(Token **rest, Token *tok, Type *ty) {
   return ty;
 }
 
-// abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
+// abstract-declarator =  pointers ("(" abstract-declarator ")")? type-suffix
 static Type *abstract_declarator(Token **rest, Token *tok, Type *ty)  {
-  while (equal(tok, "*")) {
-    ty = pointer_to(ty);
-    tok = tok->next;
-  }
+  ty = pointers(&tok, tok, ty);
 
   if (equal(tok, "(")) {
     Type *placeholder = calloc(1, sizeof(Type));
@@ -902,6 +920,7 @@ static Node
                                   pointer_to(ty)),
                          tok),
                expr, tok);
+  expr2->is_init = true;
   add_type(expr2);
   cur->next = new_unary(ND_EXPR_STMT, expr2, tok);
   return cur->next;
@@ -998,6 +1017,7 @@ static bool is_typename(Token *tok) {
   static char *kw[] = {
     "void", "_Bool", "char", "short", "int", "long", "struct", "union",
     "typedef", "enum", "static", "extern", "_Alignas", "signed", "unsigned",
+    "const",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
