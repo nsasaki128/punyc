@@ -73,5 +73,6 @@ punyc type.c
 punyc parse.c
 punyc codegen.c
 punyc tokenize.c
+punyc preprocess.c
 
 (cd $TMP; gcc -static -o ../$OUTPUT *.o)
