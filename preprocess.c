@@ -47,6 +47,17 @@ static bool is_hash(Token *tok) {
   return tok->at_bol && equal(tok, "#");
 }
 
+// Some preprocessor directives suc as #include allow extraneous
+// tokens before newline. This function skips such tokens.
+static Token *skip_line(Token *tok) {
+  if (tok->at_bol)
+    return tok;
+  warn_tok(tok, "extra token");
+  while (tok->at_bol)
+    tok = tok->next;
+  return tok;
+}
+
 static Token *copy_token(Token *tok) {
   Token *t = malloc(sizeof(Token));
   *t = *tok;
@@ -95,7 +106,8 @@ static Token *preprocess(Token *tok) {
       char *input = read_file_string(path);
       if(!input)
         error_tok(tok, "%s", strerror(errno));
-      tok = append(tokenize(path, file_no, input), tok->next);
+      tok = skip_line(tok->next);
+      tok = append(tokenize(path, file_no, input), tok);
       continue;
     }
 
