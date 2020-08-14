@@ -27,7 +27,7 @@ static void verror_at(char *filename, char *input, int lineno,
     line--;
 
   char *end = loc;
-  while (*end != '\n')
+  while (*end && *end != '\n')
     end++;
 
   // Print out the line.

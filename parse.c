@@ -115,7 +115,6 @@ static long eval2(Node *node, Var **var);
 static Node *assign(Token **rest, Token *tok);
 static Node *equality(Token **rest, Token *tok);
 static Node *logor(Token **rest, Token *tok);
-static long const_expr(Token **rest, Token *tok);
 static Node *conditional(Token **rest, Token *tok);
 static Node *logand(Token **rest, Token *tok);
 static Node *bitor(Token **rest, Token *tok);
@@ -1352,7 +1351,7 @@ static long eval2(Node *node, Var **var) {
   error_tok(node->tok, "not a constant expression");
 }
 
-static long const_expr(Token **rest, Token *tok) {
+long const_expr(Token **rest, Token *tok) {
   Node *node = conditional(rest, tok);
   return eval(node);
 }
