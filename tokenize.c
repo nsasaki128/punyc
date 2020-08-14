@@ -293,18 +293,25 @@ static Token *read_int_literal(Token *cur, char *start) {
   return tok;
 }
 
-// Initialize line info for all tokens.
+// Initialize token position info for all tokens.
 static void add_line_info(Token *tok) {
   char *p = current_input;
   int lineno = 1;
+  bool at_bol = true;
 
   do {
     if (p == tok->loc) {
       tok->lineno = lineno;
+      tok->at_bol = at_bol;
       tok = tok->next;
     }
-    if (*p == '\n')
+
+    if (*p == '\n'){
       lineno++;
+      at_bol = true;
+    } else if (!isspace(*p)) {
+      at_bol = false;
+    }
   } while (*p++);
 }
 
