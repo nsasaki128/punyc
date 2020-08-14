@@ -39,7 +39,8 @@ static char *read_file_string(char *path) {
   buf[nread] = '\0';
 
   // Emit a .file directive for the assembler.
-  printf(".file %d \"%s\"\n", ++file_no, path);
+  if (!preprocess_only)
+    printf(".file %d \"%s\"\n", ++file_no, path);
   return buf;
 }
 
