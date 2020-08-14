@@ -19,10 +19,11 @@ void error(char *fmt, ...) {
 //
 // foo.c:10 x = y + 1;
 //              ^ <error message here>
-static void verror_at(int lineno, char *loc, char *fmt, va_list ap) {
+static void verror_at(char *filename, char *input, int lineno,
+                      char *loc, char *fmt, va_list ap) {
   // Find a line containinc `loc`.
   char *line = loc;
-  while (current_input < line && line[-1] != '\n')
+  while (input < line && line[-1] != '\n')
     line--;
 
   char *end = loc;
@@ -30,7 +31,7 @@ static void verror_at(int lineno, char *loc, char *fmt, va_list ap) {
     end++;
 
   // Print out the line.
-  int indent = fprintf(stderr, "%s:%d ", current_filename, lineno);
+  int indent = fprintf(stderr, "%s:%d ", filename, lineno);
   fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
   // Show the error maessage.
@@ -50,21 +51,21 @@ static void error_at(char *loc, char *fmt, ...) {
 
   va_list ap;
   va_start(ap, fmt);
-  verror_at(lineno, loc, fmt, ap);
+  verror_at(current_filename, current_input, lineno, loc, fmt, ap);
   exit(1);
 }
 
 void error_tok(Token *tok, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  verror_at(tok->lineno, tok->loc, fmt, ap);
+  verror_at(tok->filename, tok->input, tok->lineno, tok->loc, fmt, ap);
   exit(1);
 }
 
 void warn_tok(Token *tok, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  verror_at(tok->lineno, tok->loc, fmt, ap);
+  verror_at(tok->filename, tok->input, tok->lineno, tok->loc, fmt, ap);
 }
 
 // Consumes the current token if it matches `s`.
@@ -95,6 +96,8 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   tok->kind = kind;
   tok->loc = str;
   tok->len = len;
+  tok->filename = current_filename;
+  tok->input = current_input;
   cur->next = tok;
   return tok;
 }
@@ -316,7 +319,7 @@ static void add_line_info(Token *tok) {
 }
 
 // Tokenize a given string and returns new tokens.
-Token *tokenize(char *filename, char *p) {
+Token *tokenize(char *filename, int file_no, char *p) {
   current_filename = filename;
   current_input = p;
 
@@ -411,6 +414,9 @@ Token *tokenize(char *filename, char *p) {
   }
 
   new_token(TK_EOF, cur, p, 0);
+
+  for (Token *t = head.next; t; t = t->next)
+    t->file_no = file_no;
   add_line_info(head.next);
   return head.next;
 }

@@ -39,7 +39,10 @@ struct Token {
   char *contents; // String literal contents including terminating '\0'
   char cont_len;  // string literal length
 
+  char *filename; // Input filename
+  char *input;    // Entire input string
   int lineno;     // Line number
+  int file_no;    // File number for .loc directive
   bool at_bol;    // True if this token is at beginning of line
 };
 
@@ -50,7 +53,7 @@ bool equal(Token *tok, char *s);
 Token *skip(Token *tok, char *s);
 bool consume(Token **rest, Token *tok, char *str);
 void convert_keywords(Token *tok);
-Token *tokenize(char *filename, char *p);
+Token *tokenize(char *filename, int file_no, char *p);
 
 //
 // preprocess.c

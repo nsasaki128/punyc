@@ -1,5 +1,7 @@
 #include "punyc.h"
 
+static int file_no;
+
 // Returns the contents of a given file.
 static char *read_file_string(char *path) {
   // By convention, read from stdin if a given filename is "-".
@@ -7,7 +9,7 @@ static char *read_file_string(char *path) {
   if (strcmp(path, "-")) {
     fp = fopen(path, "r");
     if (!fp)
-      error("cannot open %s: %s", path, strerror(errno));
+      return NULL;
   }
 
   int buflen = 4096;
@@ -37,12 +39,34 @@ static char *read_file_string(char *path) {
   buf[nread] = '\0';
 
   // Emit a .file directive for the assembler.
-  printf(".file 1 \"%s\"\n", path);
+  printf(".file %d \"%s\"\n", ++file_no, path);
   return buf;
 }
 
 static bool is_hash(Token *tok) {
   return tok->at_bol && equal(tok, "#");
+}
+
+static Token *copy_token(Token *tok) {
+  Token *t = malloc(sizeof(Token));
+  *t = *tok;
+  t->next = NULL;
+  t->ty = NULL;
+  return t;
+}
+
+// Append tok2 to the end fo tok1.
+static Token *append(Token *tok1, Token *tok2) {
+  if (!tok1 || tok1->kind == TK_EOF)
+    return tok2;
+
+  Token head = {};
+  Token *cur = &head;
+
+  for(; tok1 && tok1->kind != TK_EOF; tok1 = tok1->next)
+    cur = cur->next =copy_token(tok1);
+  cur->next = tok2;
+  return head.next;
 }
 
 // Visit all tokens in `tok` while evaluating preprocessing
@@ -61,6 +85,20 @@ static Token *preprocess(Token *tok) {
 
     tok = tok->next;
 
+    if (equal(tok, "include")) {
+      tok = tok->next;
+
+      if (tok->kind != TK_STR)
+        error_tok(tok, "expected a filename");
+
+      char *path = tok->contents;
+      char *input = read_file_string(path);
+      if(!input)
+        error_tok(tok, "%s", strerror(errno));
+      tok = append(tokenize(path, file_no, input), tok->next);
+      continue;
+    }
+
     // `#`-only line is legal. It's called a null directive.
     if (tok->at_bol)
       continue;
@@ -75,7 +113,9 @@ static Token *preprocess(Token *tok) {
 // Entry point function of the preprocessor.
 Token *read_file(char *path) {
   char *input = read_file_string(path);
-  Token *tok = tokenize(path, input);
+  if (!input)
+    error("cannot open %s: %s", path, strerror(errno));
+  Token *tok = tokenize(path, file_no, input);
   tok = preprocess(tok);
   convert_keywords(tok);
   return tok;
