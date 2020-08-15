@@ -4,7 +4,7 @@
 typedef struct CondIncl CondIncl;
 struct CondIncl {
   CondIncl *next;
-  enum { IN_THEN, IN_ELSE } ctx;
+  enum { IN_THEN, IN_ELSE, IN_ELIF } ctx;
   Token *tok;
   bool included;
 };
@@ -113,7 +113,7 @@ static Token *skip_cond_incl2(Token *tok) {
   return tok;
 }
 
-// Skip until next `#else` or `#endif`.
+// Skip until next `#else`, `#elif`, or `#endif`.
 // Nested `#if` and `#endif` are skipped.
 static Token *skip_cond_incl(Token *tok) {
   while (tok->kind != TK_EOF) {
@@ -122,7 +122,8 @@ static Token *skip_cond_incl(Token *tok) {
       continue;
     }
     if (is_hash(tok) &&
-        equal(tok->next, "else") || equal(tok->next, "endif"))
+        equal(tok->next, "else") || equal(tok->next, "elif") ||
+        equal(tok->next, "endif"))
       break;
     tok = tok->next;
   }
@@ -211,6 +212,18 @@ static Token *preprocess(Token *tok) {
       tok = skip_line(tok->next);
 
       if (cond_incl->included)
+        tok = skip_cond_incl(tok);
+      continue;
+    }
+
+    if (equal(tok, "elif")) {
+      if (!cond_incl || cond_incl->ctx == IN_ELSE)
+        error_tok(start, "stray #elif");
+      cond_incl->ctx = IN_ELIF;
+
+      if (!cond_incl->included && eval_const_expr(&tok, tok->next))
+        cond_incl->included = true;
+      else
         tok = skip_cond_incl(tok);
       continue;
     }
