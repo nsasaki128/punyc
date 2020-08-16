@@ -1,5 +1,12 @@
 #include "punyc.h"
 
+typedef struct Macro Macro;
+struct Macro {
+  Macro *next;
+  char *name;
+  Token *body;
+};
+
 // `#if` can be nested, so we use a stack to manane nested `#if`s.
 typedef struct CondIncl CondIncl;
 struct CondIncl {
@@ -10,6 +17,7 @@ struct CondIncl {
 };
 
 static int file_no;
+static Macro *macros;
 static CondIncl *cond_incl;
 
 static Token *read_file2(char *path);
@@ -121,6 +129,7 @@ static Token *skip_cond_incl(Token *tok) {
       tok = skip_cond_incl2(tok->next->next);
       continue;
     }
+
     if (is_hash(tok) &&
         equal(tok->next, "else") || equal(tok->next, "elif") ||
         equal(tok->next, "endif"))
@@ -165,6 +174,33 @@ static CondIncl *push_cond_incl(Token *tok, bool included) {
   return ci;
 }
 
+static Macro *find_macro(Token *tok) {
+  if (tok->kind != TK_IDENT)
+    return NULL;
+
+  for (Macro *m = macros; m; m = m->next)
+    if (strlen(m->name) == tok->len && !strncmp(m->name, tok->loc, tok->len))
+      return m;
+  return NULL;
+}
+
+static Macro *add_macro(char *name, Token *body) {
+  Macro *m = calloc(1, sizeof(Macro));
+  m->next = macros;
+  m->name = name;
+  m->body = body;
+  macros = m;
+  return m;
+}
+
+static bool expand_macro(Token **rest, Token *tok) {
+  Macro *m = find_macro(tok);
+  if (!m)
+    return false;
+  *rest = append(m->body, tok->next);
+  return true;
+}
+
 // Visit all tokens in `tok` while evaluating preprocessing
 // macros and directives.
 static Token *preprocess(Token *tok) {
@@ -172,6 +208,10 @@ static Token *preprocess(Token *tok) {
   Token *cur = &head;
 
   while (tok->kind != TK_EOF) {
+    // If it is a macro, expand it.
+    if (expand_macro(&tok, tok))
+      continue;
+
     // Pass through if it is not a "#".
     if (!is_hash(tok)) {
       cur = cur->next = tok;
@@ -194,6 +234,15 @@ static Token *preprocess(Token *tok) {
         error_tok(tok, "%s", strerror(errno));
       tok = skip_line(tok->next);
       tok = append(tokenize(path, file_no, input), tok);
+      continue;
+    }
+
+    if (equal(tok, "define")) {
+      tok = tok->next;
+      if (tok->kind != TK_IDENT)
+        error_tok(tok, "macro name must be an identifier");
+      char *name = strndup(tok->loc, tok->len);
+      add_macro(name, copy_line(&tok, tok->next));
       continue;
     }
 
