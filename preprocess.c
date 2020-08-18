@@ -22,6 +22,7 @@ static Macro *macros;
 static CondIncl *cond_incl;
 
 static Token *read_file2(char *path);
+static Token *preprocess(Token *tok);
 
 // Returns the contents of a given file.
 static char *read_file_string(char *path) {
@@ -158,6 +159,7 @@ static Token *copy_line(Token **rest, Token *tok) {
 // Read and evaluate a constant expression.
 static long eval_const_expr(Token **rest, Token *tok) {
   Token *expr = copy_line(rest, tok);
+  expr = preprocess(expr);
   Token *rest2;
   long val = const_expr(&rest2, expr);
   if (rest2->kind != TK_EOF)
