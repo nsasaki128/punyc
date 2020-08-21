@@ -301,19 +301,24 @@ static void add_line_info(Token *tok) {
   char *p = current_input;
   int lineno = 1;
   bool at_bol = true;
+  bool has_space = false;
 
   do {
     if (p == tok->loc) {
       tok->lineno = lineno;
       tok->at_bol = at_bol;
+      tok->has_space = has_space;
       tok = tok->next;
     }
 
     if (*p == '\n'){
       lineno++;
       at_bol = true;
-    } else if (!isspace(*p)) {
+    } else if (isspace(*p)) {
+      has_space = true;
+    } else {
       at_bol = false;
+      has_space = false;
     }
   } while (*p++);
 }
@@ -327,6 +332,12 @@ Token *tokenize(char *filename, int file_no, char *p) {
   Token *cur = &head;
 
   while (*p) {
+    // Skip newline character.
+    if (*p == '\n') {
+      p++;
+      continue;
+    }
+
     // Skip whitespace characters.
     if (isspace(*p)) {
       p++;
